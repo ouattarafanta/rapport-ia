@@ -24,3 +24,40 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  text-align: center;
+}
+
+.login-card h1 {
+  margin-bottom: 10px;
+}
+
+.login-card p {
+  margin-bottom: 30px;
+}
+
+.google-button {
+  width: 100%;
+  padding: 12px 20px;
+  border: 1px solid #e2dcdc;
+  border-radius: 6px;
+  background-color: rgb(12, 11, 11);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.google-button:hover {
+  background-color: #181616;
+}
