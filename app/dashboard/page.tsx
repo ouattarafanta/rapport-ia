@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -14,11 +14,9 @@ export default async function DashboardPage() {
 
   return (
     <main>
-      <h1>Bienvenue sur ReportFlow</h1>
+      <h1>BIENVENUE SUR RAPPORT-IA</h1>
 
-      <p>Vous êtes connecté.</p>
-
-      <p>Email : {user.email}</p>
+      <p>Vous êtes bien connecté</p>
     </main>
   )
 }
