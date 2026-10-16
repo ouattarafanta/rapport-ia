@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "lib/supabase/server.js", "lib/supabase/client.js", "app/login/page.jsx"  ],
+, "lib/supabase/server.ts", "lib/supabase/client.ts", "app/login/page.jsx", "app/entreprise/page.jsx"  ],
   "exclude": ["node_modules"]
 }

@@ -1,3 +1,4 @@
+"use client"
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClientSide() {
@@ -9,7 +10,7 @@ export function createClientSide() {
 
   console.log(
     'SUPABASE KEY présente:',
-    !!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   )
 
   return createBrowserClient(

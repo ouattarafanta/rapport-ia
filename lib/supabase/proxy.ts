@@ -1,61 +1,72 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-    let response = NextResponse.next({
-        request,
-    })
+  let response = NextResponse.next({
+    request,
+  });
 
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-        {
-            cookies: {
-                getAll(){
-                    return request.cookies.getAll()
-                },
+        setAll(cookiesToset) {
+          cookiesToset.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
 
-                setAll(cookiesToset) {
-                    cookiesToset.forEach(({name, value}) => {
-                        request.cookies.set(name, value)
-                    })
+          response = NextResponse.next({
+            request,
+          });
 
-                    response = NextResponse.next({
-                        request,
-                    })
+          cookiesToset.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    },
+  );
 
-                    cookiesToset.forEach(({name, value, options}) => {
-                        response.cookies.set(name, value, options)
-                    })
-                },
-            },
-        }
-    )
+  const { data, error } = await supabase.auth.getClaims();
 
- const { data, error } = await supabase.auth.getClaims()
+  if (error || !data) {
+    console.log(
+      "Erreur lors de la récupération des claims:===============",
+      error,
+    );
+  }
 
+  const claims = data?.claims;
 
-if (error || !data) {
-  console.log('Erreur lors de la récupération des claims:===============', error)
-}
-  console.log('Erreur lors de la récupération des claims:===============00000',data, error)
+  const user: any = claims?.sub ? claims : null;
 
+  const pathname = request.nextUrl.pathname;
 
-const claims = data?.claims
+  const isPublicRoute =
+    pathname.startsWith("/login") || pathname.startsWith("/auth");
 
-const user = claims?.sub ? claims : null
+  if (!user && !isPublicRoute) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
-    const pathname = request.nextUrl.pathname
+  const user_id = user?.sub;
 
-    const isPublicRoute = 
-    pathname.startsWith('/login')  ||
-    pathname.startsWith('/auth')
+  const { data: orgaId, error: orgaError } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("user_id", user_id)
+    .maybeSingle();
 
-    if (!user && !isPublicRoute){
-        return NextResponse.redirect(
-            new URL('/login', request.url)
-        )
-    }
-    return response
+  if (!orgaId && !pathname.startsWith("/entreprise")) {
+    return NextResponse.redirect(new URL("/entreprise", request.url));
+  }else if(orgaId && pathname.startsWith("/entreprise")){
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  return response;
 }
