@@ -18,3 +18,12 @@ export function createClientSide() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   )
 }
+
+
+export async function getcurrentUser2(){
+  const supabase = createClientSide()
+
+  const user = await supabase.auth.getUser()
+  console.log(user)
+
+}

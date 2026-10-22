@@ -50,8 +50,13 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute =
     pathname.startsWith("/login") || pathname.startsWith("/auth");
 
-  if (!user && !isPublicRoute) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  
+  if (!user) {
+    if (!isPublicRoute) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+   
+    return response; 
   }
 
   const user_id = user?.sub;
@@ -62,11 +67,18 @@ export async function updateSession(request: NextRequest) {
     .eq("user_id", user_id)
     .maybeSingle();
 
-  if (!orgaId && !pathname.startsWith("/entreprise")) {
+
+
+
+const isEntrepriseRoute = pathname.startsWith("/entreprise");
+
+  if (!orgaId && !isEntrepriseRoute) {
     return NextResponse.redirect(new URL("/entreprise", request.url));
-  }else if(orgaId && pathname.startsWith("/entreprise")){
+  } else if (orgaId && isEntrepriseRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
+
+
 
   return response;
 }
