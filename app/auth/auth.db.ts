@@ -3,7 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 
 export async function getcurrentUser() {
-  const out = { email: null, avatar_url: null, fullName: null } as any;
+  const out = {
+    id: null,
+    email: null,
+    avatar_url: null,
+    fullName: null,
+  } as any;
   const supabase = await createClient();
 
   const {
@@ -11,17 +16,24 @@ export async function getcurrentUser() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error) {
+  if (error || !user) {
+
+    console.log(error);
+
     return {
-      status: false,
-      code: 500,
-      message: "Erreur de recup de lùutilisateur",
+      error: {
+        status: false,
+        code: 500,
+        message: "Erreur de recup de lùutilisateur",
+      },
     };
   }
 
+  out.id = user?.id;
   out.email = user?.email;
   out.fullName = user?.user_metadata?.name;
   out.avatar_url = user?.user_metadata?.avatar_url;
+
 
   return out;
 }

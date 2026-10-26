@@ -30,7 +30,7 @@ const data = {
   navMain: [
     {
       title: "Tâches",
-      url: "#",
+      url: "/taches",
       // items: [
       //   {
       //     title: "Installation",
@@ -44,16 +44,16 @@ const data = {
     },
     {
       title: "Rapports",
-      url: "#",
+      url: "/rapports",
     },
 
     {
       title: "Services",
-      url: "#",
+      url: "/services",
     },
     {
       title: "Equipes",
-      url: "#",
+      url: "/equipes",
     },
     {
       title: "Paramètres",
@@ -64,7 +64,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [useData, setUserData]: any = useState(null);
 
-    const supabase = createClientSide();
+  const supabase = createClientSide();
 
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
@@ -77,13 +77,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   React.useEffect(() => {
     const GetUser = async () => {
-      const data = await getcurrentUser()
+      const data = await getcurrentUser();
       setUserData(data);
     };
 
-    GetUser()
+    GetUser();
   }, []);
-
 
   return (
     <Sidebar {...props}>
@@ -153,8 +152,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <Button
                   variant="destructive"
                   size="icon"
-                  onClick={ async() => {
-                    supabase.auth.signOut()
+                  onClick={async () => {
+                    supabase.auth.signOut();
                     window.location.href = "/login";
                   }}
                   className="h-8 w-8 "

@@ -16,10 +16,19 @@ import { Label } from "@/components/ui/label";
 import { getcurrentUser } from "@/app/auth/auth.db";
 import { createClientSide } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-import { SquarePen, UserRound, UserRoundPen, X } from "lucide-react";
+import {
+  LogOut,
+  SaveCheck,
+  SquarePen,
+  UserRound,
+  UserRoundPen,
+  X,
+} from "lucide-react";
+import { getcurrentProfile, updateProfile } from "./parametre.db";
 
 const Parametres = () => {
-  const [useData, setUserData]: any = useState(null);
+  const [useData, setData]: any = useState(null);
+  const [isLoarding, setIsLoarding]: any = useState(null);
   const [isreadOnly, setisreadOnly]: any = useState(true);
 
   const [fullname, setfullname]: any = useState("");
@@ -28,6 +37,20 @@ const Parametres = () => {
   const [post, setPost]: any = useState("");
 
   const supabase = createClientSide();
+
+  const init = () => {
+    const GetUser = async () => {
+      const data = await getcurrentProfile();
+      setData(data);
+
+      if (!data?.error) setEmail(data?.email);
+      setfullname(data?.full_name);
+      setPost(data?.post);
+      setPhone(data?.phone);
+    };
+
+    GetUser();
+  };
 
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
@@ -38,17 +61,31 @@ const Parametres = () => {
     });
   };
 
+  const handleSave = () => {
+    setIsLoarding(true);
+
+    const SetProfile = async () => {
+      const data = await updateProfile({
+        full_name: fullname,
+        phone: phone,
+        post: post,
+        email: email,
+      });
+    };
+
+    SetProfile();
+    init();
+    setIsLoarding(false);
+  };
   const readOnlySwither = () => {
     setisreadOnly(!isreadOnly);
   };
 
   useEffect(() => {
-    const GetUser = async () => {
-      const data = await getcurrentUser();
-      setUserData(data);
-    };
+    setIsLoarding(true);
 
-    GetUser();
+    init();
+    setIsLoarding(false);
   }, []);
 
   return (
@@ -89,11 +126,11 @@ const Parametres = () => {
             <Input
               id="email"
               type="email"
-               placeholder="nom@gmail.com"
+              placeholder="nom@gmail.com"
               value={email}
               onChange={(even) => {
                 const value = even.target.value;
-                setEmail(value)
+                setEmail(value);
               }}
               required
               readOnly={isreadOnly}
@@ -101,58 +138,59 @@ const Parametres = () => {
           </div>
 
           <div className="grid gap-2">
-            <div className="flex items-center">
-              <Label htmlFor="password">Mot de passe</Label>
-            </div>
-
-            <Input id="text" type="password" readOnly={isreadOnly} />
-          </div>
-
- <div className="grid gap-2">
             <Label htmlFor="email">Téléphone</Label>
             <Input
               id="phone"
               type="text"
-               placeholder="070000000"
+              placeholder="070000000"
               value={phone}
               onChange={(even) => {
                 const value = even.target.value;
-                setPhone(value)
+                setPhone(value);
               }}
               required
               readOnly={isreadOnly}
             />
           </div>
 
-
-           <div className="grid gap-2">
+          <div className="grid gap-2">
             <Label htmlFor="email">Poste</Label>
             <Input
               id="poste"
               type="text"
-               placeholder="informaticienne"
+              placeholder="informaticienne"
               value={post}
               onChange={(even) => {
                 const value = even.target.value;
-                setPost(value)
+                setPost(value);
               }}
               required
               readOnly={isreadOnly}
             />
           </div>
-
-
         </div>
       </CardContent>
       <CardFooter className="flex-col gap-2">
-        <Button
-          type="submit"
-          className="w-full"
-          variant={"destructive"}
-          onClick={handleGoogleLogin}
-        >
-          Deconnexion
-        </Button>
+        {isreadOnly ? (
+          <Button
+            type="submit"
+            className="w-full"
+            variant={"destructive"}
+            onClick={handleGoogleLogin}
+          >
+            <LogOut /> Deconnexion
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            className="w-full"
+            variant={"default"}
+            disabled={isLoarding}
+            onClick={handleSave}
+          >
+            <SaveCheck /> Enregistrer
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
