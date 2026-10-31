@@ -31,6 +31,8 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}/dashboard`);
         }
 
+        console.log('Profile introuvable dans callback', profile)
+
         // 5. Sinon, créer son entreprise
         return NextResponse.redirect(`${origin}/entreprise`);
       }

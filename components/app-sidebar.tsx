@@ -52,10 +52,6 @@ const data = {
       url: "/services",
     },
     {
-      title: "Equipes",
-      url: "/equipes",
-    },
-    {
       title: "Paramètres",
       url: "/parametres",
     },
@@ -63,6 +59,7 @@ const data = {
 };
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [useData, setUserData]: any = useState(null);
+  const [sections, setSections]: any = useState(data);
 
   const supabase = createClientSide();
 
@@ -75,6 +72,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     });
   };
 
+
+
   React.useEffect(() => {
     const GetUser = async () => {
       const data = await getcurrentUser();
@@ -82,7 +81,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     };
 
     GetUser();
-  }, []);
+
+    if (useData?.isAdmin) {
+      setSections({
+        navMain: [...data.navMain, { title: "Equipes", url: "/equipes" }],
+      });
+    }
+  }, [useData?.isAdmin]);
 
   return (
     <Sidebar {...props}>
@@ -105,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="flex flex-col justify-between max-h-screen">
         <SidebarGroup>
           <SidebarMenu>
-            {data.navMain.map((item) => (
+            {sections.navMain.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   render={<a href={item.url} className="font-medium" />}

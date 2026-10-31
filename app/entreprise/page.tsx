@@ -17,9 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 import Image from "next/image";
+import { ChevronLeft, LogOut } from "lucide-react";
+import { createClientSide } from "@/lib/supabase/client";
 
 export default function EntreprisePage() {
   const router = useRouter();
+  const supabase = createClientSide();
+
 
   const [nomEntreprise, setNomEntreprise] = useState("");
   const [emailEntreprise, setEmailEntreprise] = useState("");
@@ -51,9 +55,7 @@ export default function EntreprisePage() {
         console.log(resultat.message);
         setErreur(resultat.message);
 
-        alert(resultat.message)
-
-       
+        alert(resultat.message);
       }
 
       alert(resultat.message);
@@ -64,8 +66,6 @@ export default function EntreprisePage() {
       setErreur("Une erreur est survenu");
     }
   };
-  
-  
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-300 px-4">
@@ -153,20 +153,35 @@ export default function EntreprisePage() {
             />
           </div>
 
-            <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="phoneUtilisateur">Téléphone</Label>
             <Input
               id="phoneUtilisateur"
               type="tel"
               value={phoneUtilisateur}
               onChange={(e) => setPhoneUtilisateur(e.target.value)}
-               
             />
           </div>
 
-          <Button onClick={handleNext} className="mt-6 w-full h-12 text-base">
-            Suivant →
-          </Button>
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={async () => {
+                supabase.auth.signOut();
+                window.location.href = "/login";
+                router.push('/login')
+              }}
+              className=" w-8 h-12 "
+              title="Se déconnecter"
+            >
+              <ChevronLeft />
+            </Button>
+
+            <Button onClick={handleNext} className=" h-12 text-base flex-1">
+              Suivant →
+            </Button>
+          </div>
 
           {erreur && <p>{erreur}</p>}
         </CardContent>

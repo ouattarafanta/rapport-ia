@@ -1,7 +1,9 @@
 "use server";
 
-import { createClient, createClientWithSecretKey } from "@/lib/supabase/server";
-import { Console } from "console";
+import {
+  createClient,
+  createClientWithServiceRoleKey,
+} from "@/lib/supabase/server";
 
 export const createEntreprise = async ({
   nomEntreprise,
@@ -10,7 +12,7 @@ export const createEntreprise = async ({
   nomUtilisateur,
   posteUtilisateur,
   phoneUtilisateur,
-}) => {
+}: any) => {
   if (
     !nomEntreprise?.trim() ||
     !emailEntreprise?.trim() ||
@@ -25,7 +27,7 @@ export const createEntreprise = async ({
     };
   }
 
-  const supabase = await createClientWithSecretKey();
+  const supabase = await createClientWithServiceRoleKey();
 
   const {
     data: { user },
@@ -87,7 +89,6 @@ export const createEntreprise = async ({
     };
   }
 
-  
   return {
     code: 200,
     message: "Entreprise et profile créé avec succès",

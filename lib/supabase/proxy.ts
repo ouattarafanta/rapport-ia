@@ -50,35 +50,49 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute =
     pathname.startsWith("/login") || pathname.startsWith("/auth");
 
-  
   if (!user) {
     if (!isPublicRoute) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-   
-    return response; 
+
+    return response;
   }
 
   const user_id = user?.sub;
+  let isAdmin = true;
+  const isEquipeRoute = pathname.startsWith("/equipes");
 
-  const { data: orgaId, error: orgaError } = await supabase
+  // cas user admin
+  let { data: orgaId, error: orgaError }: any = await supabase
     .from("organizations")
     .select("id")
     .eq("user_id", user_id)
     .maybeSingle();
 
+  // cas user lamda
+  if (!orgaId && !orgaError) {
+    let { data: orgaId2, error: profileError } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user_id)
+      .maybeSingle();
 
+    orgaId = orgaId2;
+    isAdmin = false;
+  }
 
-
-const isEntrepriseRoute = pathname.startsWith("/entreprise");
+  const isEntrepriseRoute = pathname.startsWith("/entreprise");
 
   if (!orgaId && !isEntrepriseRoute) {
+    console.log("entreprise introuvable", orgaId);
     return NextResponse.redirect(new URL("/entreprise", request.url));
   } else if (orgaId && isEntrepriseRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-
+  if (!isAdmin && isEquipeRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   return response;
 }

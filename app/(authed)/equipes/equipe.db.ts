@@ -191,6 +191,7 @@ export async function createUser(datas: { email: string; password: string }) {
   const { data, error } = await supabase.auth.admin.createUser({
     email: datas.email,
     password: datas.email,
+    email_confirm: true
   });
 
   if (error?.code == "email_exists") {
