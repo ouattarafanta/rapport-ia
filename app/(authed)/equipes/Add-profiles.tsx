@@ -13,8 +13,9 @@ import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CirclePlus, Loader } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createProfile } from "./equipe.db";
+import { getOrgaServices } from "../services/services.db";
 
 export default function AddProfiles({ makeMute, mute }: any) {
   const [open, setOpen] = useState(false);
@@ -26,9 +27,19 @@ export default function AddProfiles({ makeMute, mute }: any) {
     email: "",
     phone: "",
     post: "",
-    description: "",
+    service_id: "",
     password: "",
   });
+  const [services, setServices]: any = useState([]);
+
+  // liste des services pour le choix du service
+  useEffect(() => {
+    const GetServices = async () => {
+      const result: any = await getOrgaServices();
+      setServices(Array.isArray(result) ? result : []);
+    };
+    GetServices();
+  }, []);
 
   const handleCreateProfile = () => {
     const creatProfile = async () => {
@@ -38,9 +49,19 @@ export default function AddProfiles({ makeMute, mute }: any) {
       if (profile?.error) {
         setError(profile?.error);
       } else {
-
+        // on vide le formulaire pour le prochain ajout
+        setData({
+          user_mail: "",
+          full_name: "",
+          email: "",
+          phone: "",
+          post: "",
+          service_id: "",
+          password: "",
+        });
+        setError(null);
         setOpen(false);
-        makeMute(!mute)
+        makeMute(!mute);
       }
       setIsLoarding(false);
     };
@@ -51,10 +72,12 @@ export default function AddProfiles({ makeMute, mute }: any) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <form>
-        <DialogTrigger asChild>
-          <Button variant="default" size={"lg"} className="font-semibold">
-            <CirclePlus /> Ajouter
-          </Button>
+        <DialogTrigger
+          render={
+            <Button variant="default" size={"lg"} className="font-semibold" />
+          }
+        >
+          <CirclePlus /> Ajouter
         </DialogTrigger>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -81,7 +104,6 @@ export default function AddProfiles({ makeMute, mute }: any) {
                 onChange={(val: any) => {
                   let value = val.target.value?.toLowerCase() || "";
                   value = value.replace(/[^a-z]/g, "");
-                  console.log(val);
                   setData({
                     ...data,
                     user_mail: value,
@@ -91,7 +113,7 @@ export default function AddProfiles({ makeMute, mute }: any) {
             </Field>
 
             <Field>
-              <Label htmlFor="nom-1">Mot de pass</Label>
+              <Label htmlFor="password-1">Mot de passe (8 caractères min.)</Label>
               <Input
                 id="password-1"
                 name="password"
@@ -182,26 +204,32 @@ export default function AddProfiles({ makeMute, mute }: any) {
             </Field>
 
             <Field>
-              <Label htmlFor="desc-1">Description</Label>
-              <textarea
-                id="desc-1"
-                name="desc"
-                value={data?.description}
+              <Label htmlFor="service-1">Service</Label>
+              <select
+                id="service-1"
+                value={data?.service_id}
                 onChange={(val: any) => {
-                  const value = val.target.value;
                   setData({
                     ...data,
-                    description: value,
+                    service_id: val.target.value,
                   });
                 }}
-              />
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Aucun service</option>
+                {services.map((service: any) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             {error && <p className=" text-red-500"> {error?.message} </p>}
           </FieldGroup>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+            <DialogClose render={<Button variant="outline" />}>
+              Annuler
             </DialogClose>
             <Button
               type="submit"
@@ -211,7 +239,7 @@ export default function AddProfiles({ makeMute, mute }: any) {
               {isLoarding ? (
                 <Loader className="animate-spin" />
               ) : (
-                <span>Save changes</span>
+                <span>Enregistrer</span>
               )}
             </Button>
           </DialogFooter>

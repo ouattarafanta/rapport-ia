@@ -1,17 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 
 import {
@@ -22,18 +12,15 @@ import {
 } from "@/components/ui/accordion";
 
 
-import { getcurrentUser } from "@/app/auth/auth.db";
-import { createClientSide } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import {
   Check,
+  Loader,
   Plus,
   SquarePen,
   TextAlignStart,
   Trash,
   Undo2,
-  UserRound,
-  UserRoundPen,
   X,
 } from "lucide-react";
 import {
@@ -50,25 +37,28 @@ const Taches = () => {
   const [useData, setData]: any = useState([]);
   const [inputText, setInputText]: any = useState("");
   const [taskContent, setTaskContent]: any = useState("");
-  const [isreadOnly, setisreadOnly]: any = useState(true);
   const [isLoarding, setIsLoarding]: any = useState(false);
   const [mute, makeMute]: any = useState(false);
   const [currentTask, setCurrentTask]: any = useState({});
 
-
-  const [fullname, setfullname]: any = useState("");
-  const [email, setEmail]: any = useState("");
-  const [phone, setPhone]: any = useState("");
-  const [post, setPost]: any = useState("");
-
-
-  const supabase = createClientSide();
+  // chargement de la liste au premier affichage
+  const [isListLoading, setIsListLoading] = useState(true);
+  // filtre : "toutes", "en_cours" ou "terminees"
+  const [filtre, setFiltre] = useState("toutes");
+  // id de la tâche en cours d'enregistrement (évite les doubles clics)
+  const [savingId, setSavingId]: any = useState(null);
 
 
   const handleCreateTask = async () => {
+    if (!inputText.trim() || isLoarding) return;
     setIsLoarding(true);
-    await createTask({ title: inputText, content: taskContent });
+    const result: any = await createTask({ title: inputText, content: taskContent });
     setIsLoarding(false);
+
+    if (result?.error) {
+      alert(result.error.message);
+      return;
+    }
     setInputText("");
     setTaskContent("");
 
@@ -77,10 +67,46 @@ const Taches = () => {
   };
 
 
+  const handleUpdateTask = async () => {
+    if (!currentTask?.title?.trim()) {
+      alert("Le titre ne peut pas être vide.");
+      return;
+    }
+    setSavingId(currentTask.id);
+    await updateTask(currentTask.id, currentTask);
+    setSavingId(null);
+    makeMute(!mute);
+    setCurrentTask({});
+  };
+
+  const handleTaskDone = async (id: string) => {
+    setSavingId(id);
+    await makeTasksDone(id);
+    setSavingId(null);
+    makeMute(!mute);
+  };
+
+  // compteurs et filtre
+  const nbEnCours = useData.filter((el: any) => !el.is_finished).length;
+  const nbTerminees = useData.filter((el: any) => el.is_finished).length;
+
+  const tachesAffichees = useData.filter((el: any) => {
+    if (filtre == "en_cours") return !el.is_finished;
+    if (filtre == "terminees") return el.is_finished;
+    return true;
+  });
+
+  const filtres = [
+    { label: "Toutes", value: "toutes", nombre: useData.length },
+    { label: "En cours", value: "en_cours", nombre: nbEnCours },
+    { label: "Terminées", value: "terminees", nombre: nbTerminees },
+  ];
+
   useEffect(() => {
     const GetUser = async () => {
-      const data = await getTasks();
-      setData(data);
+      const data: any = await getTasks();
+      setData(Array.isArray(data) ? data : []);
+      setIsListLoading(false);
     };
     GetUser();
   }, [mute]);
@@ -105,6 +131,10 @@ const Taches = () => {
             onChange={(event) => {
               setInputText(event.target.value);
             }}
+            onKeyDown={(event) => {
+              // Entrée = créer la tâche
+              if (event.key === "Enter") handleCreateTask();
+            }}
             className="h-11 flex-1"
           />
 
@@ -114,7 +144,11 @@ const Taches = () => {
             className="h-11 gap-2 px-5"
             onClick={handleCreateTask}
           >
-            <Plus className="h-4 w-4"/>
+            {isLoarding ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
             Créer une tâche
           </Button>
         </div>
@@ -146,18 +180,53 @@ const Taches = () => {
       </div>
 
 
+      <div className="mt-4 flex flex-wrap gap-2 mx-1">
+        {filtres.map((item) => (
+          <Button
+            key={item.value}
+            variant={filtre == item.value ? "default" : "outline"}
+            onClick={() => setFiltre(item.value)}
+          >
+            {item.label} ({item.nombre})
+          </Button>
+        ))}
+      </div>
+
       <div className="mt-4">
-        {useData?.map((el: any) => {
+        {isListLoading && (
+          <p className="flex items-center gap-2 text-muted-foreground m-3">
+            <Loader className="animate-spin" /> Chargement des tâches...
+          </p>
+        )}
+
+        {!isListLoading && tachesAffichees.length == 0 && (
+          <p className="text-muted-foreground m-3">
+            {useData.length == 0
+              ? "Aucune tâche pour le moment. Créez votre première tâche ci-dessus."
+              : "Aucune tâche dans cette catégorie."}
+          </p>
+        )}
+
+        {tachesAffichees.map((el: any) => {
           if (el.id == currentTask.id) {
             return (
-              <div className="m-3 flex flex-col gap-2 bg-secondary p-3 rounded-lg">
+              <div
+                key={el.id}
+                className="m-3 flex flex-col gap-2 bg-secondary p-3 rounded-lg"
+              >
                 <div className="flex gap-2 items-center">
                   <Input
                     placeholder=""
                     value={currentTask.title}
                     className="bg-white"
+                    autoFocus
                     onChange={(e) => {
                       setCurrentTask({ ...currentTask, title: e.target.value });
+                    }}
+                    onKeyDown={(e) => {
+                      // Entrée = enregistrer, Échap = annuler
+                      if (e.key === "Enter") handleUpdateTask();
+                      if (e.key === "Escape") setCurrentTask({});
                     }}
                   />
 
@@ -166,8 +235,8 @@ const Taches = () => {
                     <Button
                       className="h-11 gap-2 px-5"
                       variant={"outline"}
-                      onClick={() => {
-                        updateTaskWitheUndo(currentTask.id, currentTask);
+                      onClick={async () => {
+                        await updateTaskWitheUndo(currentTask.id, currentTask);
                         makeMute(!mute);
                         setCurrentTask({});
                       }}
@@ -195,7 +264,10 @@ const Taches = () => {
                   id="task-description"
                   placeholder="Décrivez les détails de cette tâche..."
                   className="min-h-32 w-full resize-y rounded-lg border border-input bg-background px-3 py-3 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                  value={currentTask?.content}
+                  value={currentTask?.content || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setCurrentTask({});
+                  }}
                   onChange={(e) => {
                     setCurrentTask({
                       ...currentTask,
@@ -209,20 +281,23 @@ const Taches = () => {
                   <Button
                     className="h-11 gap-2 px-5 flex-1"
                     variant={"default"}
-                    onClick={() => {
-                      updateTask(currentTask.id, currentTask);
-                      makeMute(!mute);
-                      setCurrentTask({});
-                    }}
+                    disabled={savingId == currentTask.id}
+                    onClick={handleUpdateTask}
                   >
-                    <Check />
+                    {savingId == currentTask.id ? (
+                      <Loader className="animate-spin" />
+                    ) : (
+                      <Check />
+                    )}
                     Enregistrer la modification
                   </Button>
                   <Button
                     className="h-11 gap-2 px-5"
                     variant={"destructive"}
-                    onClick={() => {
-                      deleteTask(currentTask.id);
+                    onClick={async () => {
+                      // confirmation avant de supprimer
+                      if (!confirm("Supprimer cette tâche ?")) return;
+                      await deleteTask(currentTask.id);
                       makeMute(!mute);
                       setCurrentTask({});
                     }}
@@ -237,7 +312,7 @@ const Taches = () => {
 
 
           return (
-            <div className="">
+            <div key={el.id}>
               <Accordion className={"mt-0 mx-1"}>
                 <AccordionItem value="item-1">
                   <AccordionTrigger className="flex gap-2 items-center">
@@ -247,35 +322,70 @@ const Taches = () => {
                       placeholder=""
                       value={el?.title}
                       readOnly={true}
+                      title="Double-cliquez pour modifier"
                       onDoubleClick={() => {
                         setCurrentTask(el);
                       }}
-                      className="border-none shadow-none outline-none ring-0 hover:outline-none focus:outline-none focus-visible:ring-0"
-                      // className=" hover:outline-none no-underline "
+                      className={
+                        "border-none shadow-none outline-none ring-0 hover:outline-none focus:outline-none focus-visible:ring-0" +
+                        (el?.is_finished ? " line-through text-muted-foreground" : "")
+                      }
                     />
 
 
                     {el?.is_finished ? (
                       <Button className="h-11 gap-2 px-5" disabled={true}>
                         <Check />
-                        Terminer
+                        Terminée
                       </Button>
                     ) : (
 
                       <Button
                         className="h-11 gap-2 px-5"
-                        onClick={() => {
-                          makeTasksDone(el.id);
-                          makeMute(!mute);
+                        disabled={savingId == el.id}
+                        onClick={(event) => {
+                          // évite d'ouvrir l'accordéon en cliquant sur le bouton
+                          event.stopPropagation();
+                          handleTaskDone(el.id);
                         }}
                       >
-                        <Check />
+                        {savingId == el.id ? (
+                          <Loader className="animate-spin" />
+                        ) : (
+                          <Check />
+                        )}
                         Terminer
                       </Button>
                     )}
                   </AccordionTrigger>
-                  <AccordionContent>
-                    <p className="bg-secondary p-2 rounded-md">{el?.content}</p>
+                  <AccordionContent className="space-y-2">
+                    <p className="bg-secondary p-2 rounded-md whitespace-pre-line">
+                      {el?.content || "Aucune description."}
+                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        Créée le{" "}
+                        {new Date(el.created_at).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                        {el?.meta_data?.finished_at &&
+                          " · Terminée le " +
+                            new Date(el.meta_data.finished_at).toLocaleDateString(
+                              "fr-FR",
+                              { day: "numeric", month: "long", year: "numeric" },
+                            )}
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCurrentTask(el);
+                        }}
+                      >
+                        <SquarePen /> Modifier
+                      </Button>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

@@ -48,11 +48,14 @@ export default function TableActions() {
 
   const init = () => {
     const GetProfiles = async () => {
-      const data = await getcurrentUsers();
+      const data: any = await getcurrentUsers();
 
-      // console.log(data)
-
-      if (!data?.error) setDataErorMessage(data?.error?.message);
+      if (data?.error) {
+        setDataErorMessage(data.error.message);
+        setData([]);
+        return;
+      }
+      setDataErorMessage("");
       setData(data || []);
     };
 
@@ -82,7 +85,7 @@ export default function TableActions() {
             <Users />
             Equipes
           </CardTitle>
-          <CardDescription>Liste de tous les utilisteurs</CardDescription>
+          <CardDescription>Liste de tous les utilisateurs</CardDescription>
           <CardAction>
             <AddProfiles makeMute={makeMute} mute={mute} />
           </CardAction>
@@ -94,6 +97,7 @@ export default function TableActions() {
                 <TableHead>Identifiants</TableHead>
                 <TableHead>Noms</TableHead>
                 <TableHead>Poste</TableHead>
+                <TableHead>Service</TableHead>
                 <TableHead>Telephone</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -101,52 +105,64 @@ export default function TableActions() {
             </TableHeader>
             <TableBody>
               {data.map((el: any) => {
-                console.log(el);
-
                 return (
-                  <TableRow>
+                  <TableRow key={el.id}>
                     <TableCell>{el?.identifiant}</TableCell>
                     <TableCell>{el?.full_name}</TableCell>
                     <TableCell>{el?.post}</TableCell>
+                    <TableCell>{el?.service_name || "-"}</TableCell>
                     <TableCell>{el?.phone}</TableCell>
                     <TableCell>{el?.email}</TableCell>
 
                     <TableCell className="text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                          >
-                            <MoreHorizontalIcon />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                            />
+                          }
+                        >
+                          <MoreHorizontalIcon />
+                          <span className="sr-only">Ouvrir le menu</span>
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
-                              console.log(el.id);
                               setUserId(el.id);
                             }}
                           >
-                            {" "}
-                            <PencilLine /> Edit
+                            <PencilLine /> Modifier
                           </DropdownMenuItem>
 
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
                             onClick={() => {
+                              // confirmation avant de supprimer
+                              if (
+                                !confirm(
+                                  "Supprimer " +
+                                    el?.full_name +
+                                    " ? Ses tâches seront aussi supprimées.",
+                                )
+                              ) {
+                                return;
+                              }
                               const Delete = async () => {
-                                await deleteUser(el.id);
+                                const result: any = await deleteUser(el.id);
+                                if (result?.error) {
+                                  alert(result.error.message);
+                                }
                                 makeMute(!mute);
                               };
                               Delete();
                             }}
                           >
-                            <Trash /> Delete
+                            <Trash /> Supprimer
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -158,7 +174,11 @@ export default function TableActions() {
           </Table>
         </CardContent>
         <CardFooter>
-          <p>Card Footer</p>
+          {dataErorMessage ? (
+            <p className="text-red-500">{dataErorMessage}</p>
+          ) : (
+            <p>{data.length} utilisateur(s)</p>
+          )}
         </CardFooter>
       </Card>
     </div>

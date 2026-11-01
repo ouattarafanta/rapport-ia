@@ -2,16 +2,15 @@
 import { createClientWithServiceRoleKey } from "@/lib/supabase/server";
 import { getcurrentOrganization } from "../equipes/equipe.db";
 import { getcurrentUser } from "@/app/auth/auth.db";
-import { title } from "process";
 
 export async function createTask(data: any) {
   const supabase = await createClientWithServiceRoleKey();
 
-  const { id: orga_id, error } = await getcurrentOrganization();
+  const orga: any = await getcurrentOrganization();
+  const orga_id = orga?.id;
   const { id: user_id, error: userError } = await getcurrentUser();
 
-  if (error || !orga_id || userError) {
-    console.log(error);
+  if (!orga_id || userError) {
     return {
       error: {
         status: false,
@@ -21,7 +20,7 @@ export async function createTask(data: any) {
     };
   }
 
-  if (!orga_id || !data?.title) {
+  if (!orga_id || !data?.title?.trim()) {
     console.log("parametres incomplet", orga_id, data);
     return {
       error: {
@@ -89,7 +88,10 @@ export async function getTasks() {
 export async function makeTasksDone(task_id: string) {
   const supabase = await createClientWithServiceRoleKey();
 
-  if (!task_id) {
+  // l'utilisateur ne peut modifier que ses propres tâches
+  const { id: user_id, error } = await getcurrentUser();
+
+  if (!task_id || error) {
     return;
   }
 
@@ -97,8 +99,11 @@ export async function makeTasksDone(task_id: string) {
     .from("tasks")
     .update({
       is_finished: true,
+      // date de fin, utilisée pour les rapports
+      meta_data: { finished_at: new Date().toISOString() },
     })
-    .eq("id", task_id);
+    .eq("id", task_id)
+    .eq("profile_id", user_id);
 
   if (taskErrorE) {
     console.log(taskErrorE);
@@ -121,7 +126,10 @@ export async function updateTask(
 ) {
   const supabase = await createClientWithServiceRoleKey();
 
-  if (!task_id) {
+  // l'utilisateur ne peut modifier que ses propres tâches
+  const { id: user_id, error } = await getcurrentUser();
+
+  if (!task_id || error) {
     return;
   }
 
@@ -131,7 +139,8 @@ export async function updateTask(
       title: data?.title,
       content: data?.content,
     })
-    .eq("id", task_id);
+    .eq("id", task_id)
+    .eq("profile_id", user_id);
 
   if (taskErrorE) {
     console.log(taskErrorE);
@@ -154,7 +163,10 @@ export async function updateTaskWitheUndo(
 ) {
   const supabase = await createClientWithServiceRoleKey();
 
-  if (!task_id) {
+  // l'utilisateur ne peut modifier que ses propres tâches
+  const { id: user_id, error } = await getcurrentUser();
+
+  if (!task_id || error) {
     return;
   }
 
@@ -164,8 +176,10 @@ export async function updateTaskWitheUndo(
       title: data?.title,
       content: data?.content,
       is_finished: false,
+      meta_data: {},
     })
-    .eq("id", task_id);
+    .eq("id", task_id)
+    .eq("profile_id", user_id);
 
   if (taskErrorE) {
     console.log(taskErrorE);
@@ -185,14 +199,18 @@ export async function updateTaskWitheUndo(
 export async function deleteTask(task_id: string) {
   const supabase = await createClientWithServiceRoleKey();
 
-  if (!task_id) {
+  // l'utilisateur ne peut modifier que ses propres tâches
+  const { id: user_id, error } = await getcurrentUser();
+
+  if (!task_id || error) {
     return;
   }
 
   const { data: datas, error: taskErrorE } = await supabase
     .from("tasks")
     .delete()
-    .eq("id", task_id);
+    .eq("id", task_id)
+    .eq("profile_id", user_id);
 
   if (taskErrorE) {
     console.log(taskErrorE);

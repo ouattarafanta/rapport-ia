@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { getcurrentUser } from "@/app/auth/auth.db";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,14 +15,17 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // utilisateur connecté (nom, email, admin ou non) pour le menu
+  const user = await getcurrentUser();
+
   return (
     <SidebarProvider className="max-h-screen overflow-y-hiddenx">
-      <AppSidebar />
+      <AppSidebar user={user} />
 
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b">
@@ -31,7 +35,7 @@ export default function RootLayout({
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Accueil</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">Accueil</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>

@@ -7,15 +7,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CirclePlus, Loader, PencilLine } from "lucide-react";
+import { Loader, PencilLine } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createProfile, getOrgaUser, updateProfile } from "./equipe.db";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { getOrgaUser, updateProfile } from "./equipe.db";
+import { getOrgaServices } from "../services/services.db";
 
 import {
   Accordion,
@@ -25,8 +24,6 @@ import {
 } from "@/components/ui/accordion";
 
 export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
-  const [dataErorMessage, setDataErorMessage]: any = useState("");
-
   const [isLoarding, setIsLoarding] = useState(false);
   const [error, setError]: any = useState(null);
   const [data, setData] = useState({
@@ -37,19 +34,29 @@ export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
     email: "",
     phone: "",
     post: "",
-    description: "",
+    service_id: "",
     password: "",
   });
+  const [services, setServices]: any = useState([]);
+
+  // liste des services pour le choix du service
+  useEffect(() => {
+    const GetServices = async () => {
+      const result: any = await getOrgaServices();
+      setServices(Array.isArray(result) ? result : []);
+    };
+    GetServices();
+  }, []);
 
   const handleUpateProfile = () => {
     const UpdateProfile = async () => {
       setIsLoarding(true);
-      const profile = await updateProfile(data);
+      const profile: any = await updateProfile(data);
 
       if (profile?.error) {
         setError(profile?.error);
       } else {
-        // setOpen(false);
+        setUserId(null);
         makeMute(!mute);
       }
       setIsLoarding(false);
@@ -60,11 +67,12 @@ export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
 
   const init = () => {
     const GetProfile = async () => {
-      const data = await getOrgaUser(id);
+      const data: any = await getOrgaUser(id);
 
-      console.log(data);
-
-      if (!data?.error) setDataErorMessage(data?.error?.message);
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
       setData(data || ({} as any));
     };
 
@@ -81,22 +89,24 @@ export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
   if (!id) return;
 
   return (
-    <Dialog open={id} onOpenChange={setUserId}>
+    <Dialog
+      open={Boolean(id)}
+      onOpenChange={(open) => {
+        if (!open) setUserId(null);
+      }}
+    >
       <form>
-        <DialogTrigger asChild>
-          <div className=""></div>
-        </DialogTrigger>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className={"flex gap-2 items-center"}>
               {" "}
               <Button variant={"secondary"}>
-                <CirclePlus />
+                <PencilLine />
               </Button>
-              Ajout d'utilisateur
+              Modification de l'utilisateur
             </DialogTitle>
             <DialogDescription>
-              Remplis les champs pour enregistrer l'utilisateur.
+              Modifie les champs puis enregistre.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
@@ -122,7 +132,7 @@ export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
 
             <Accordion>
               <AccordionItem value="item-1">
-                <AccordionTrigger>Modff le pass</AccordionTrigger>
+                <AccordionTrigger>Modifier le mot de passe</AccordionTrigger>
                 <AccordionContent className="p-2">
                   <Field>
                     <Label htmlFor="nom-1">Mot de passe</Label>
@@ -220,26 +230,32 @@ export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
             </Field>
 
             <Field>
-              <Label htmlFor="desc-1">Description</Label>
-              <textarea
-                id="desc-1"
-                name="desc"
-                value={data?.description}
+              <Label htmlFor="service-1">Service</Label>
+              <select
+                id="service-1"
+                value={data?.service_id}
                 onChange={(val: any) => {
-                  const value = val.target.value;
                   setData({
                     ...data,
-                    description: value,
+                    service_id: val.target.value,
                   });
                 }}
-              />
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Aucun service</option>
+                {services.map((service: any) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             {error && <p className=" text-red-500"> {error?.message} </p>}
           </FieldGroup>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+            <DialogClose render={<Button variant="outline" />}>
+              Annuler
             </DialogClose>
             <Button
               type="submit"
@@ -249,7 +265,7 @@ export default function EditProfiles({ id, setUserId, makeMute, mute }: any) {
               {isLoarding ? (
                 <Loader className="animate-spin" />
               ) : (
-                <span>Save changes</span>
+                <span>Enregistrer</span>
               )}
             </Button>
           </DialogFooter>

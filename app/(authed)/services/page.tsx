@@ -48,11 +48,14 @@ export default function TableActions() {
 
   const init = () => {
     const GetProfiles = async () => {
-      const data = await getOrgaServices();
+      const data: any = await getOrgaServices();
 
-      console.log(data);
-
-      if (!data?.error) setDataErorMessage(data?.error?.message);
+      if (data?.error) {
+        setDataErorMessage(data.error.message);
+        setData([]);
+        return;
+      }
+      setDataErorMessage("");
       setData(data || []);
     };
 
@@ -99,50 +102,55 @@ export default function TableActions() {
             </TableHeader>
             <TableBody>
               {data?.map((el: any) => {
-                console.log(el);
-
                 return (
-                  <TableRow>
+                  <TableRow key={el.id}>
                     <TableCell>{el?.name}</TableCell>
                     <TableCell>{el?.description}</TableCell>
-                    <TableCell>{"4"}</TableCell>
+                    <TableCell>{el?.nb_collabs}</TableCell>
 
                     <TableCell className="text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                          >
-                            <MoreHorizontalIcon />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                            />
+                          }
+                        >
+                          <MoreHorizontalIcon />
+                          <span className="sr-only">Ouvrir le menu</span>
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
-                              console.log(el.id);
                               setServiceId(el.id);
                             }}
                           >
-                            {" "}
-                            <PencilLine /> Edit
+                            <PencilLine /> Modifier
                           </DropdownMenuItem>
 
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
                             onClick={() => {
+                              // confirmation avant de supprimer
+                              if (!confirm("Supprimer le service " + el?.name + " ?")) {
+                                return;
+                              }
                               const Delete = async () => {
-                                await deleteService(el.id);
+                                const result: any = await deleteService(el.id);
+                                if (result?.error) {
+                                  alert(result.error.message);
+                                }
                                 makeMute(!mute);
                               };
                               Delete();
                             }}
                           >
-                            <Trash /> Delete
+                            <Trash /> Supprimer
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -154,7 +162,11 @@ export default function TableActions() {
           </Table>
         </CardContent>
         <CardFooter>
-          <p>Card Footer</p>
+          {dataErorMessage ? (
+            <p className="text-red-500">{dataErorMessage}</p>
+          ) : (
+            <p>{data.length} service(s)</p>
+          )}
         </CardFooter>
       </Card>
     </div>

@@ -7,12 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CirclePlus, Loader, PencilLine } from "lucide-react";
+import { Loader, PencilLine } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
@@ -25,7 +24,6 @@ import {
 import { getServiceById, updateService } from "./services.db";
 
 export default function EditService({ id, setUserId, makeMute, mute }: any) {
-  const [dataErorMessage, setDataErorMessage]: any = useState("");
 
   const [isLoarding, setIsLoarding] = useState(false);
   const [error, setError]: any = useState(null);
@@ -37,7 +35,7 @@ export default function EditService({ id, setUserId, makeMute, mute }: any) {
   const handleUpateProfile = () => {
     const UpdateProfile = async () => {
       setIsLoarding(true);
-      const profile = await updateService(data);
+      const profile: any = await updateService(data);
 
       if (profile?.error) {
         setError(profile?.error);
@@ -53,11 +51,12 @@ export default function EditService({ id, setUserId, makeMute, mute }: any) {
 
   const init = () => {
     const GetProfile = async () => {
-      const data = await getServiceById(id);
+      const data: any = await getServiceById(id);
 
-      console.log(data);
-
-      if (!data?.error) setDataErorMessage(data?.error?.message);
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
       setData(data || ({} as any));
     };
 
@@ -74,22 +73,24 @@ export default function EditService({ id, setUserId, makeMute, mute }: any) {
   if (!id) return;
 
   return (
-    <Dialog open={id} onOpenChange={setUserId}>
+    <Dialog
+      open={Boolean(id)}
+      onOpenChange={(open) => {
+        if (!open) setUserId(null);
+      }}
+    >
       <form>
-        <DialogTrigger asChild>
-          <div className=""></div>
-        </DialogTrigger>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className={"flex gap-2 items-center"}>
               {" "}
               <Button variant={"secondary"}>
-                <CirclePlus />
+                <PencilLine />
               </Button>
-              Ajout d'utilisateur
+              Modification du service
             </DialogTitle>
             <DialogDescription>
-              Remplis les champs pour enregistrer l'utilisateur.
+              Modifie les champs puis enregistre.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
@@ -132,8 +133,8 @@ export default function EditService({ id, setUserId, makeMute, mute }: any) {
             {error && <p className=" text-red-500"> {error?.message} </p>}
           </FieldGroup>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+            <DialogClose render={<Button variant="outline" />}>
+              Annuler
             </DialogClose>
             <Button
               type="submit"
@@ -143,7 +144,7 @@ export default function EditService({ id, setUserId, makeMute, mute }: any) {
               {isLoarding ? (
                 <Loader className="animate-spin" />
               ) : (
-                <span>Save changes</span>
+                <span>Enregistrer</span>
               )}
             </Button>
           </DialogFooter>

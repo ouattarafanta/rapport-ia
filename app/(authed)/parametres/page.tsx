@@ -17,6 +17,7 @@ import { getcurrentUser } from "@/app/auth/auth.db";
 import { createClientSide } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import {
+  Loader,
   LogOut,
   SaveCheck,
   SquarePen,
@@ -24,7 +25,10 @@ import {
   UserRoundPen,
   X,
 } from "lucide-react";
-import { getcurrentProfile, updateProfile } from "./parametre.db";
+import { getcurrentProfile, getMonCompte, updateProfile } from "./parametre.db";
+import CompteCard from "./CompteCard";
+import EntrepriseCard from "./EntrepriseCard";
+import MotDePasseCard from "./MotDePasseCard";
 
 const Parametres = () => {
   const [useData, setData]: any = useState(null);
@@ -35,6 +39,8 @@ const Parametres = () => {
   const [email, setEmail]: any = useState("");
   const [phone, setPhone]: any = useState("");
   const [post, setPost]: any = useState("");
+  const [erreur, setErreur] = useState("");
+  const [compte, setCompte]: any = useState(null);
 
   const supabase = createClientSide();
 
@@ -43,156 +49,182 @@ const Parametres = () => {
       const data = await getcurrentProfile();
       setData(data);
 
-      if (!data?.error) setEmail(data?.email);
-      setfullname(data?.full_name);
-      setPost(data?.post);
-      setPhone(data?.phone);
+      if (data?.error) return;
+      setEmail(data?.email || "");
+      setfullname(data?.full_name || "");
+      setPost(data?.post || "");
+      setPhone(data?.phone || "");
     };
 
     GetUser();
   };
 
-  const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsLoarding(true);
+    setErreur("");
 
-    const SetProfile = async () => {
-      const data = await updateProfile({
-        full_name: fullname,
-        phone: phone,
-        post: post,
-        email: email,
-      });
-    };
+    const data: any = await updateProfile({
+      full_name: fullname,
+      phone: phone,
+      post: post,
+      email: email,
+    });
 
-    SetProfile();
-    init();
     setIsLoarding(false);
+
+    if (data?.error) {
+      setErreur("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    // on recharge les infos et on repasse en lecture seule
+    init();
+    setisreadOnly(true);
   };
   const readOnlySwither = () => {
+    // en annulant, on remet les valeurs enregistrées
+    if (!isreadOnly) init();
+    setErreur("");
     setisreadOnly(!isreadOnly);
   };
 
-  useEffect(() => {
-    setIsLoarding(true);
+  // infos du compte (identifiant, rôle, entreprise...)
+  const chargerCompte = async () => {
+    const data: any = await getMonCompte();
+    if (!data?.error) setCompte(data);
+  };
 
+  useEffect(() => {
     init();
-    setIsLoarding(false);
+    chargerCompte();
   }, []);
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="flex gap-2">
-          <UserRoundPen/> Modification des informations
-        </CardTitle>
-        <CardDescription>
-          Vous pouvez modifier vos informations suivantes
-        </CardDescription>
-        <CardAction>
-          <Button variant="outline" onClick={readOnlySwither}>
-            {isreadOnly ? <SquarePen /> : <X color="red" />}
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-6">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Nom complet *</Label>
-            <Input
-              id="fullname"
-              type="text"
-              placeholder="Votre nom complet"
-              value={fullname}
-              onChange={(even) => {
-                const value = even.target.value;
-                setfullname(value);
-              }}
-              required
-              readOnly={isreadOnly}
-            />
-          </div>
+    <div className="flex flex-wrap items-start gap-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="flex gap-2">
+            <UserRoundPen /> Modification des informations
+          </CardTitle>
+          <CardDescription>
+            Vous pouvez modifier vos informations suivantes
+          </CardDescription>
+          <CardAction>
+            <Button variant="outline" onClick={readOnlySwither}>
+              {isreadOnly ? <SquarePen /> : <X color="red" />}
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="fullname">Nom complet *</Label>
+              <Input
+                id="fullname"
+                type="text"
+                placeholder="Votre nom complet"
+                value={fullname}
+                onChange={(even) => {
+                  const value = even.target.value;
+                  setfullname(value);
+                }}
+                required
+                readOnly={isreadOnly}
+              />
+            </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="nom@gmail.com"
-              value={email}
-              onChange={(even) => {
-                const value = even.target.value;
-                setEmail(value);
-              }}
-              required
-              readOnly={isreadOnly}
-            />
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="nom@gmail.com"
+                value={email}
+                onChange={(even) => {
+                  const value = even.target.value;
+                  setEmail(value);
+                }}
+                required
+                readOnly={isreadOnly}
+              />
+            </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="email">Téléphone</Label>
-            <Input
-              id="phone"
-              type="text"
-              placeholder="070000000"
-              value={phone}
-              onChange={(even) => {
-                const value = even.target.value;
-                setPhone(value);
-              }}
-              required
-              readOnly={isreadOnly}
-            />
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input
+                id="phone"
+                type="text"
+                placeholder="070000000"
+                value={phone}
+                onChange={(even) => {
+                  const value = even.target.value;
+                  setPhone(value);
+                }}
+                required
+                readOnly={isreadOnly}
+              />
+            </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="email">Poste</Label>
-            <Input
-              id="poste"
-              type="text"
-              placeholder="informaticienne"
-              value={post}
-              onChange={(even) => {
-                const value = even.target.value;
-                setPost(value);
-              }}
-              required
-              readOnly={isreadOnly}
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="poste">Poste</Label>
+              <Input
+                id="poste"
+                type="text"
+                placeholder="informaticienne"
+                value={post}
+                onChange={(even) => {
+                  const value = even.target.value;
+                  setPost(value);
+                }}
+                required
+                readOnly={isreadOnly}
+              />
+            </div>
           </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex-col gap-2">
-        {isreadOnly ? (
-          <Button
-            type="submit"
-            className="w-full"
-            variant={"destructive"}
-            onClick={handleGoogleLogin}
-          >
-            <LogOut /> Deconnexion
-          </Button>
-        ) : (
-          <Button
-            type="submit"
-            className="w-full"
-            variant={"default"}
-            disabled={isLoarding}
-            onClick={handleSave}
-          >
-            <SaveCheck /> Enregistrer
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter className="flex-col gap-2">
+          {erreur && <p className="text-red-500">{erreur}</p>}
+          {isreadOnly ? (
+            <Button
+              type="submit"
+              className="w-full"
+              variant={"destructive"}
+              onClick={handleLogout}
+            >
+              <LogOut /> Déconnexion
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              className="w-full"
+              variant={"default"}
+              disabled={isLoarding}
+              onClick={handleSave}
+            >
+              {isLoarding ? <Loader className="animate-spin" /> : <SaveCheck />}
+              Enregistrer
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+
+      <CompteCard compte={compte} />
+
+      {/* tout le monde voit l'entreprise, seul l'admin peut la modifier */}
+      {compte && (
+        <EntrepriseCard
+          entreprise={compte.entreprise}
+          isAdmin={compte.isAdmin}
+          onSaved={chargerCompte}
+        />
+      )}
+      {compte && !compte.isAdmin && <MotDePasseCard />}
+    </div>
   );
 };
 

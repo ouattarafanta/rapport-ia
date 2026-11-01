@@ -27,20 +27,40 @@ export const createEntreprise = async ({
     };
   }
 
-  const supabase = await createClientWithServiceRoleKey();
-
+  // On récupère l'utilisateur connecté avec le client normal (cookies)
+  const supabaseUser = await createClient();
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
+  } = await supabaseUser.auth.getUser();
 
-  if (error) {
+  // Puis on écrit avec le client admin
+  const supabase = await createClientWithServiceRoleKey();
+
+  if (error || !user) {
     console.log(error, "Erreur de recupération de l'utilisateur");
     return {
       code: 401,
       message: "Erreur de récupération de ID du user",
       success: false,
     };
+  }
+
+  // Le slug sert dans les identifiants des membres (ex : fanta@trabad)
+  let slug = nomEntreprise
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[^a-z0-9]/g, "");
+  if (!slug) slug = "entreprise";
+
+  const { data: slugExiste } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (slugExiste) {
+    slug = slug + Math.floor(Math.random() * 1000);
   }
 
   const { error: organisationError, data: organisationData } = await supabase
@@ -50,6 +70,7 @@ export const createEntreprise = async ({
       description: descriptionEntreprise,
       email: emailEntreprise,
       user_id: user.id,
+      slug: slug,
     })
     .select()
     .single();
@@ -82,6 +103,9 @@ export const createEntreprise = async ({
   });
 
   if (profileError) {
+    console.log(profileError, "Erreur de création du profile");
+    // on annule la création de l'entreprise
+    await supabase.from("organizations").delete().eq("id", organisationData.id);
     return {
       code: 403,
       message: "Erreur de creation du profile",

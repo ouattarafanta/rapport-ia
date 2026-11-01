@@ -1,6 +1,9 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import {
+  createClient,
+  createClientWithServiceRoleKey,
+} from "@/lib/supabase/server";
 
 export async function getcurrentUser() {
   const out = {
@@ -24,7 +27,7 @@ export async function getcurrentUser() {
       error: {
         status: false,
         code: 500,
-        message: "Erreur de recup de lùutilisateur",
+        message: "Erreur de recup de l'utilisateur",
       },
     };
   }
@@ -33,7 +36,26 @@ export async function getcurrentUser() {
   out.email = user?.email;
   out.fullName = user?.user_metadata?.name;
   out.avatar_url = user?.user_metadata?.avatar_url;
-  out.isAdmin = user?.app_metadata?.provider === "email" ? false : true;
+
+  // L'administrateur est celui qui a créé l'entreprise
+  const admin = await createClientWithServiceRoleKey();
+  const { data: orga } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  out.isAdmin = orga ? true : false;
+
+  // Les membres n'ont pas de nom Google : on prend celui du profil
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.full_name) out.fullName = profile.full_name;
+  if (!out.isAdmin && profile?.email) out.email = profile.email;
 
   return out;
 }
@@ -58,8 +80,6 @@ export async function signInWithIdentifiant(data: {
     // 3. Transformer l'identifiant en adresse e-mail interne
     const email = `${data.identifiant.trim()}.local.reportflow`;
 
-    console.log(email, data);
-
     // 4. Tenter la connexion
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
@@ -68,8 +88,8 @@ export async function signInWithIdentifiant(data: {
 
     // 5. Gérer les erreurs d'authentification
     if (error) {
-      console.log(error);
-      if (error.message === "Invalid login credentials") {
+      console.log(error.code);
+      if (error.code === "invalid_credentials") {
         return {
           success: false,
           code: 401,

@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 import Image from "next/image";
-import { ChevronLeft, LogOut } from "lucide-react";
+import { ChevronLeft, Loader } from "lucide-react";
 import { createClientSide } from "@/lib/supabase/client";
 
 export default function EntreprisePage() {
@@ -33,11 +33,11 @@ export default function EntreprisePage() {
   const [phoneUtilisateur, setPhoneUtilisateur] = useState("");
 
   const [erreur, setErreur] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleNext = async () => {
-    console.log("Nom de l’entreprise :", nomEntreprise);
-    console.log("Email de l’entreprise :", emailEntreprise);
-    console.log("Description de l’entreprise :", descriptionEntreprise);
+    setErreur("");
+    setIsLoading(true);
 
     try {
       const resultat = await createEntreprise({
@@ -49,21 +49,18 @@ export default function EntreprisePage() {
         phoneUtilisateur,
       });
 
-      console.log("Résultat :", resultat);
-
+      // On reste sur la page tant qu'il y a une erreur
       if (!resultat.success) {
-        console.log(resultat.message);
         setErreur(resultat.message);
-
-        alert(resultat.message);
+        setIsLoading(false);
+        return;
       }
-
-      alert(resultat.message);
 
       router.push("/dashboard");
     } catch (errror) {
-      console.log("Une erreur");
-      setErreur("Une erreur est survenu");
+      console.log("Une erreur", errror);
+      setErreur("Une erreur est survenue");
+      setIsLoading(false);
     }
   };
 
@@ -84,7 +81,7 @@ export default function EntreprisePage() {
           </CardTitle>
 
           <CardDescription className="text-base">
-            Pour commencer, renseignez le nom de votre entreprise.
+            Pour commencer, renseignez les informations de votre entreprise.
           </CardDescription>
         </CardHeader>
 
@@ -168,9 +165,8 @@ export default function EntreprisePage() {
               variant="destructive"
               size="icon"
               onClick={async () => {
-                supabase.auth.signOut();
+                await supabase.auth.signOut();
                 window.location.href = "/login";
-                router.push('/login')
               }}
               className=" w-8 h-12 "
               title="Se déconnecter"
@@ -178,12 +174,17 @@ export default function EntreprisePage() {
               <ChevronLeft />
             </Button>
 
-            <Button onClick={handleNext} className=" h-12 text-base flex-1">
+            <Button
+              onClick={handleNext}
+              disabled={isLoading}
+              className=" h-12 text-base flex-1"
+            >
+              {isLoading && <Loader className="animate-spin" />}
               Suivant →
             </Button>
           </div>
 
-          {erreur && <p>{erreur}</p>}
+          {erreur && <p className="text-red-500">{erreur}</p>}
         </CardContent>
       </Card>
     </main>

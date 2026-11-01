@@ -34,13 +34,6 @@ export async function updateSession(request: NextRequest) {
 
   const { data, error } = await supabase.auth.getClaims();
 
-  if (error || !data) {
-    console.log(
-      "Erreur lors de la récupération des claims:===============",
-      error,
-    );
-  }
-
   const claims = data?.claims;
 
   const user: any = claims?.sub ? claims : null;
@@ -60,7 +53,9 @@ export async function updateSession(request: NextRequest) {
 
   const user_id = user?.sub;
   let isAdmin = true;
-  const isEquipeRoute = pathname.startsWith("/equipes");
+  // pages réservées à l'administrateur
+  const isEquipeRoute =
+    pathname.startsWith("/equipes") || pathname.startsWith("/services");
 
   // cas user admin
   let { data: orgaId, error: orgaError }: any = await supabase
@@ -84,7 +79,6 @@ export async function updateSession(request: NextRequest) {
   const isEntrepriseRoute = pathname.startsWith("/entreprise");
 
   if (!orgaId && !isEntrepriseRoute) {
-    console.log("entreprise introuvable", orgaId);
     return NextResponse.redirect(new URL("/entreprise", request.url));
   } else if (orgaId && isEntrepriseRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));

@@ -25,10 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { getTasksByPeriodAndAuthor } from "./rapports.db";
 import { getPeriodDates } from "@/lib/utils";
 
-export function CreateRapport({ generate }: any) {
+export function CreateRapport({ generate, isLoading, isAdmin }: any) {
+  const [open, setOpen] = useState(false);
   const [currentPeriod, setCurrentPeriod] = useState("week");
   const [currentAuthor, setCurrentAuthor] = useState("individual");
 
@@ -47,14 +47,19 @@ export function CreateRapport({ generate }: any) {
     { label: "Rapport de Service", value: "service" },
   ];
 
+  // le rapport de direction (toute l'entreprise) est réservé à l'admin
+  if (isAdmin) {
+    author.push({ label: "Rapport de Direction", value: "direction" });
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <form>
         <DialogTrigger
           render={
             <Button className={"w-full"}>
               <Sparkles className="animate-pulse" />
-              Generer un rapport
+              Générer un rapport
             </Button>
           }
         />
@@ -71,7 +76,7 @@ export function CreateRapport({ generate }: any) {
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <Label htmlFor="name-1">Periode</Label>
+              <Label htmlFor="name-1">Période</Label>
 
               <Select
                 items={period}
@@ -114,17 +119,17 @@ export function CreateRapport({ generate }: any) {
             </Field>
 
             <Field>
-              <Label htmlFor="name-1">Auteurs</Label>
+              <Label htmlFor="name-1">Type de rapport</Label>
 
               <Select
                 items={author}
                 onValueChange={(e: any) => {
                   setCurrentAuthor(e);
                 }}
-                defaultValue={"personal"}
+                value={currentAuthor}
               >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Auteurs" />
+                  <SelectValue placeholder="Type de rapport" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -151,7 +156,9 @@ export function CreateRapport({ generate }: any) {
             />
             <Button
               type="button"
+              disabled={isLoading}
               onClick={() => {
+                setOpen(false);
                 generate({
                   period: currentPeriod,
                   author: currentAuthor,

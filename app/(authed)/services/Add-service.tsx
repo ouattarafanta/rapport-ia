@@ -28,11 +28,13 @@ export default function AddProfiles({ makeMute, mute }: any) {
   const handleCreateProfile = () => {
     const creatProfile = async () => {
       setIsLoarding(true);
-      const profile = await createService(data);
+      const profile: any = await createService(data);
 
       if (profile?.error) {
         setError(profile?.error);
       } else {
+        setData({ name: "", description: "" });
+        setError(null);
         setOpen(false);
         makeMute(!mute);
       }
@@ -45,10 +47,12 @@ export default function AddProfiles({ makeMute, mute }: any) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <form>
-        <DialogTrigger asChild>
-          <Button variant="default" size={"lg"} className="font-semibold">
-            <CirclePlus /> Ajouter
-          </Button>
+        <DialogTrigger
+          render={
+            <Button variant="default" size={"lg"} className="font-semibold" />
+          }
+        >
+          <CirclePlus /> Ajouter
         </DialogTrigger>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -57,10 +61,10 @@ export default function AddProfiles({ makeMute, mute }: any) {
               <Button variant={"secondary"}>
                 <CirclePlus />
               </Button>
-              Ajout 
+              Ajout d'un service
             </DialogTitle>
             <DialogDescription>
-              Remplis les champs pour enregistrer .
+              Remplis les champs pour enregistrer le service.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
@@ -101,8 +105,8 @@ export default function AddProfiles({ makeMute, mute }: any) {
             {error && <p className=" text-red-500"> {error?.message} </p>}
           </FieldGroup>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+            <DialogClose render={<Button variant="outline" />}>
+              Annuler
             </DialogClose>
             <Button
               type="submit"
@@ -112,7 +116,7 @@ export default function AddProfiles({ makeMute, mute }: any) {
               {isLoarding ? (
                 <Loader className="animate-spin" />
               ) : (
-                <span>Save changes</span>
+                <span>Enregistrer</span>
               )}
             </Button>
           </DialogFooter>

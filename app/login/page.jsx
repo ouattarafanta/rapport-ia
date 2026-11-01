@@ -39,13 +39,17 @@ export default function LoginPage() {
 
   const handleIdentifiantLogin = async () => {
     setIsloarding(true);
+    setErrorMessage("");
     const data = await signInWithIdentifiant({ identifiant, password });
     setIsloarding(false);
-    routeur.push('/dashboard')
 
+    // On ne va au tableau de bord que si la connexion a réussi
     if (!data?.success) {
       setErrorMessage(data?.message);
+      return;
     }
+
+    routeur.push("/dashboard");
   };
 
   return (
@@ -94,6 +98,10 @@ export default function LoginPage() {
               onChange={(even) => {
                 const value = even.target.value;
                 setPassword(value);
+              }}
+              onKeyDown={(even) => {
+                // Entrée = se connecter
+                if (even.key === "Enter") handleIdentifiantLogin();
               }}
               required
             />

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -169,5 +170,35 @@
   }
   html {
     @apply font-sans;
+  }
+}
+/* Impression d'un rapport (PDF) : on n'imprime que le document, en A4 */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    max-width: none;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* éviter de couper un tableau ou un titre en bas de page */
+  .print-area table,
+  .print-area section,
+  .print-area h2 {
+    break-inside: avoid;
   }
 }
