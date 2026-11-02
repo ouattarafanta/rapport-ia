@@ -96,7 +96,7 @@ export default function TableActions() {
               <TableRow>
                 <TableHead>Noms</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Nb collabs</TableHead>
+                <TableHead>Nombre de collaborateurs</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

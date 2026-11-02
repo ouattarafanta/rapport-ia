@@ -98,7 +98,7 @@ export default function TableActions() {
                 <TableHead>Noms</TableHead>
                 <TableHead>Poste</TableHead>
                 <TableHead>Service</TableHead>
-                <TableHead>Telephone</TableHead>
+                <TableHead>Téléphone</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>

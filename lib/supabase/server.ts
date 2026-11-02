@@ -36,6 +36,7 @@ export async function createClient() {
 // Pas de cookies ici : sinon Supabase utiliserait la session de l'utilisateur
 // à la place de la clé service_role.
 export async function createClientWithServiceRoleKey() {
+  
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
